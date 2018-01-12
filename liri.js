@@ -1,3 +1,4 @@
+//pull in my npm node bits
 require("dotenv").config();
 var keys = require("./keys.js");
 var Twitter = require('twitter');
@@ -9,17 +10,19 @@ var inquirer = require("inquirer");
 var theCommand;
 var theData;
 
+//create my spotify and twitter clients
 var sClient = new Spotify(keys.spotify);
 var tClient = new Twitter(keys.twitter);
 
+//pop the menu up
 inquireMe();
 
 
 function parseTheCommand(aCommand,aData)
-{
+{//log the current command
 	fs.appendFile("log.txt",aCommand.trim() + "," + aData.trim() + " \n", (err) =>
 	{
-		if(err)
+		if(err)//if there is an error - console log it and return
 		{
 			console.log("Error writing to log: " + err);
 			console.log("\n");
@@ -27,8 +30,8 @@ function parseTheCommand(aCommand,aData)
 			return;
 		}
 	});
-	switch(aCommand) 
-	{
+	switch(aCommand) //which command did i pick?
+	{//call the chosen command
 	    case "my-tweets":
 	    	twitterSearch(aData);
 	        break;
@@ -42,11 +45,11 @@ function parseTheCommand(aCommand,aData)
 }
 
 function twitterSearch(tData)
-{
+{//searching twitter - set up a param and get the timeline
 	var params = {screen_name: tData};
 	tClient.get('statuses/user_timeline', params, function(error, tweets, response) 
 	{
-		if (!error) 
+		if (!error) //if there is no error - console.log the tweets
 		{
 		    for (var i = 0; i < tweets.length; i++) 
 		    {
@@ -59,9 +62,9 @@ function twitterSearch(tData)
 		    	console.log(tweets[i].text);
 		    	console.log('\n');
 		    }
-		    inquireMe();
+		    inquireMe();// pop the menu back up
 		}
-		else
+		else//if there is an error, console.log it and pop the menu back up
 		{
 			console.log("Error occurred: " + error);
 			console.log("\n");
@@ -71,10 +74,10 @@ function twitterSearch(tData)
 }
 
 function spotSearch(sData)
-{
+{//set up the spotify client and send the query
 	sClient.search({ type: 'track', query: sData }, function(err, data) 
 	{
-		if (err) 
+		if (err) //if there is an error, console.log it and pop the menu back up
 		{
 			console.log('Error occurred: ' + err);
 			console.log("\n");
@@ -82,7 +85,7 @@ function spotSearch(sData)
 		}
 		else
 		{
-			for (var i = 0; i < data.tracks.items.length; i++) 
+			for (var i = 0; i < data.tracks.items.length; i++) //console.log the track info
 		    {
 		    	if(i == 20)
 		    	{
@@ -100,7 +103,7 @@ function spotSearch(sData)
 }
 
 function mobiSearch(mData)
-{
+{//set up my query URL bits
 	var movieName = mData.split(" ");
 	var name = movieName.join("+");
 	// Then run a request to the OMDB API with the movie specified
@@ -109,14 +112,14 @@ function mobiSearch(mData)
 	//Mr. Nobody
 	request(queryUrl,function(error, response, body)
 	{
-		if(!error && response.statusCode === 200)
+		if(!error && response.statusCode === 200)//if there's no error, let's console.log the info
 		{
 			//console.log(response);
 			//console.log(body);
 			//console.log(JSON.parse(body));
 			console.log("Title: " + JSON.parse(body).Title);
 			console.log("Year: " + JSON.parse(body).Year);
-			if(JSON.parse(body).Ratings)
+			if(JSON.parse(body).Ratings)//if there is no info this breaks, so we check first
 			{
 				console.log(JSON.parse(body).Ratings[0].Source + ": " + JSON.parse(body).Ratings[0].Value);
 				if(JSON.parse(body).Ratings.length > 1)
@@ -130,9 +133,9 @@ function mobiSearch(mData)
 			console.log("Plot: " + JSON.parse(body).Plot);
 			console.log("Actors: " + JSON.parse(body).Actors);
 			console.log("\n");
-			inquireMe();
+			inquireMe();//pop the menu back up again when done
 		}
-		else
+		else//oops there was an error, let's console.log it and pop the menu back up
 		{
 			console.log("Error occurred: " + error);
 			console.log(response.statusCode);
@@ -143,22 +146,22 @@ function mobiSearch(mData)
 
 }
 
-function inquireMe()
+function inquireMe()// give the user a choice of commands
 {
 	inquirer
   	.prompt([
     // Here we give the user a list to choose from.
     {
       type: "list",
-      message: "Please chooe a function",
+      message: "Please choose a function",
       choices: ["my-tweets", "spotify-this-song", "mobie-this","do-what-it-says", "quit"],
       name: "myChoice"
     }
   ])
   .then(function(inquirerResponse) {
     // get the choice and then do something
-    if(inquirerResponse.myChoice == "do-what-it-says") 
-	{
+    if(inquirerResponse.myChoice == "do-what-it-says") //do what's in the text file
+	{//use the fs function to log the command
 		fs.appendFile("log.txt",inquirerResponse.myChoice.trim() + " \n", (err) =>
 		{
 			if(err)
@@ -171,12 +174,12 @@ function inquireMe()
 		});
     	fs.readFile("random.txt", "utf8", (err, data) =>
 		{
-			if(err)
+			if(err)//uh oh there was an error let's log it and exit
 			{
 				console.log(err)
 				return;
 			}
-			else
+			else//get the command from the text file and run it
 			{
 				var dataArray = data.split(",");
 				//console.log(dataArray);
@@ -195,24 +198,24 @@ function inquireMe()
 			}
 		});
     }
-    else if(inquirerResponse.myChoice == "quit") 
+    else if(inquirerResponse.myChoice == "quit") //exit the program - we're done
 	{
 		return;
 	}
     else
     {
-    	theCommand = inquirerResponse.myChoice;
+    	theCommand = inquirerResponse.myChoice;//they made a choice, do they want to add more data?
     	getMore();
     }
   });
 }
 
-function getMore()
+function getMore()//we can use the default data, or the use can type something in.  
 {
 	var theMessage;
 	switch(theCommand) 
 	{
-	    case "my-tweets":
+	    case "my-tweets"://set the default data
 	    	theMessage = "Which twitter account would you like?";
 	    	theData = "@tweetyourmomma";
 	        break;
@@ -235,7 +238,7 @@ function getMore()
 	    }
   	])
 	.then(function(inquirerResponse) {
-	    // If the inquirerResponse confirms, we displays the inquirerResponse's username and pokemon from the answers.
+	    // grab the user data and run the command with that instead of the default data
 	    if (inquirerResponse.myData) 
 	    {
 	      	theData = inquirerResponse.myData;
